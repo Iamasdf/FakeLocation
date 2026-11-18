@@ -148,6 +148,22 @@
     <string name="home_started">模拟位置已启动</string>
     <string name="home_stopped">模拟位置已停止</string>
     <string name="home_need_target">请先在上方选择目标位置</string>
+
+    <!-- 位置编辑 / 历史长按菜单 -->
+    <string name="location_edit_title">位置编辑</string>
+    <string name="label_name">名称</string>
+    <string name="label_address">详细地址</string>
+    <string name="label_latitude">纬度</string>
+    <string name="label_longitude">经度</string>
+    <string name="label_altitude">海拔</string>
+    <string name="menu_pin">置顶</string>
+    <string name="menu_unpin">取消置顶</string>
+    <string name="menu_edit">编辑</string>
+    <string name="menu_delete">删除</string>
+    <string name="delete_confirm">确定要删除该项历史记录吗？</string>
+    <string name="save_ok">已保存</string>
+    <string name="save_failed">保存失败，请重试</string>
+    <string name="edit_location_missing">该记录不存在</string>
     <string name="update_downloading">升级文件下载中。。。</string>
     <string name="update_last">恭喜，影梭已是最新版</string>
     <string name="update_download">立即下载</string>

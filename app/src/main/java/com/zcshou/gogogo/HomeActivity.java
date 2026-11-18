@@ -1,6 +1,7 @@
 package com.zcshou.gogogo;
 
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -19,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -278,15 +280,21 @@ public class HomeActivity extends BaseActivity {
         String latWgs;
         String lngCustom;
         String latCustom;
+        String address;
+        int pinned;
+        String altitude;
         long timestamp;
     }
 
     private List<HistoryRow> queryRows() {
         List<HistoryRow> rows = new ArrayList<>();
+        Cursor cursor = null;
         try {
-            Cursor cursor = mHistoryDB.query(DataBaseHistoryLocation.TABLE_NAME, null,
+            cursor = mHistoryDB.query(DataBaseHistoryLocation.TABLE_NAME, null,
                     DataBaseHistoryLocation.DB_COLUMN_ID + " > ?", new String[]{"0"},
-                    null, null, DataBaseHistoryLocation.DB_COLUMN_TIMESTAMP + " DESC", null);
+                    null, null,
+                    DataBaseHistoryLocation.DB_COLUMN_PINNED + " DESC, " +
+                            DataBaseHistoryLocation.DB_COLUMN_TIMESTAMP + " DESC", null);
             while (cursor.moveToNext()) {
                 HistoryRow row = new HistoryRow();
                 row.id = cursor.getLong(0);
@@ -296,11 +304,17 @@ public class HomeActivity extends BaseActivity {
                 row.timestamp = cursor.getLong(4);
                 row.lngCustom = cursor.getString(5);
                 row.latCustom = cursor.getString(6);
+                row.address = cursor.getString(7);
+                row.pinned = cursor.getInt(8);
+                row.altitude = cursor.getString(9);
                 rows.add(row);
             }
-            cursor.close();
         } catch (Exception e) {
             XLog.e("HOME: queryRows error");
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
         return rows;
     }
@@ -368,6 +382,10 @@ public class HomeActivity extends BaseActivity {
                 renderTarget();
                 GoUtils.DisplayToast(HomeActivity.this, getResources().getString(R.string.home_selected));
             });
+            item.setOnLongClickListener(v -> {
+                showHistoryItemMenu(v, row);
+                return true;
+            });
             mHistoryContainer.addView(item);
             shown++;
         }
@@ -381,6 +399,57 @@ public class HomeActivity extends BaseActivity {
             empty.setPadding(p, p, p, p);
             mHistoryContainer.addView(empty);
         }
+    }
+
+    /*============================== 长按菜单：置顶 / 编辑 / 删除 ==============================*/
+    private void showHistoryItemMenu(View anchor, HistoryRow row) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenu().add(0, 1, 0, row.pinned == 1 ? R.string.menu_unpin : R.string.menu_pin);
+        popup.getMenu().add(0, 2, 1, R.string.menu_edit);
+        popup.getMenu().add(0, 3, 2, R.string.menu_delete);
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == 1) {
+                setPinned(row, row.pinned != 1);
+            } else if (id == 2) {
+                Intent intent = new Intent(this, EditLocationActivity.class);
+                intent.putExtra(EditLocationActivity.EXTRA_ID, row.id);
+                startActivity(intent);
+            } else if (id == 3) {
+                confirmDelete(row);
+            }
+            return true;
+        });
+        popup.show();
+    }
+
+    private void setPinned(HistoryRow row, boolean pinned) {
+        try {
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_PINNED, pinned ? 1 : 0);
+            mHistoryDB.update(DataBaseHistoryLocation.TABLE_NAME, contentValues,
+                    DataBaseHistoryLocation.DB_COLUMN_ID + " = ?", new String[]{String.valueOf(row.id)});
+        } catch (Exception e) {
+            XLog.e("HOME: setPinned error");
+        }
+        refreshAll();
+    }
+
+    private void confirmDelete(HistoryRow row) {
+        new AlertDialog.Builder(this)
+                .setTitle("警告")
+                .setMessage(R.string.delete_confirm)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    try {
+                        mHistoryDB.delete(DataBaseHistoryLocation.TABLE_NAME,
+                                DataBaseHistoryLocation.DB_COLUMN_ID + " = ?", new String[]{String.valueOf(row.id)});
+                    } catch (Exception e) {
+                        XLog.e("HOME: delete error");
+                    }
+                    refreshAll();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private String displayName(HistoryRow row) {
@@ -444,7 +513,7 @@ public class HomeActivity extends BaseActivity {
                 Intent serviceGoIntent = new Intent(this, ServiceGo.class);
                 serviceGoIntent.putExtra(MainActivity.LNG_MSG_ID, latLng[0]);
                 serviceGoIntent.putExtra(MainActivity.LAT_MSG_ID, latLng[1]);
-                serviceGoIntent.putExtra(MainActivity.ALT_MSG_ID, getAltitude());
+                serviceGoIntent.putExtra(MainActivity.ALT_MSG_ID, getRowAltitude(row));
 
                 startForegroundService(serviceGoIntent);
                 bindService(new Intent(this, ServiceGo.class), mConnection, BIND_AUTO_CREATE);
@@ -489,7 +558,7 @@ public class HomeActivity extends BaseActivity {
         }
         try {
             double[] latLng = MapUtils.bd2wgs(Double.parseDouble(row.lngCustom), Double.parseDouble(row.latCustom));
-            mServiceBinder.setPosition(latLng[0], latLng[1], getAltitude());
+            mServiceBinder.setPosition(latLng[0], latLng[1], getRowAltitude(row));
         } catch (NumberFormatException e) {
             XLog.e("HOME: applyCurrentPosition error");
             return;
@@ -505,5 +574,17 @@ public class HomeActivity extends BaseActivity {
         } catch (NumberFormatException e) {
             return 55.0;
         }
+    }
+
+    /** 优先使用记录自身的海拔，未设置时回退到全局设置 */
+    private double getRowAltitude(HistoryRow row) {
+        if (row != null && !TextUtils.isEmpty(row.altitude)) {
+            try {
+                return Double.parseDouble(row.altitude);
+            } catch (NumberFormatException e) {
+                XLog.e("HOME: altitude parse error");
+            }
+        }
+        return getAltitude();
     }
 }
