@@ -336,7 +336,7 @@ public class HistoryActivity extends BaseActivity {
                 bd09Latitude = offsetResult[1];
             }
 
-            if (!MainActivity.showLocation(name, bd09Longitude, bd09Latitude)) {
+            if (!MainActivity.showLocation(this, name, bd09Longitude, bd09Latitude)) {
                 GoUtils.DisplayToast(this, getResources().getString(R.string.history_error_location));
             }
             this.finish();

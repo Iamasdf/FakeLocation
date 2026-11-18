@@ -118,6 +118,11 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
     public static final String POI_LONGITUDE = "POI_LONGITUDE";
     public static final String POI_LATITUDE = "POI_LATITUDE";
 
+    /* 首页持久化所选位置的偏好键 */
+    private static final String KEY_MARK_LAT = "KEY_MARK_LAT";
+    private static final String KEY_MARK_LNG = "KEY_MARK_LNG";
+    private static final String KEY_MARK_NAME = "KEY_MARK_NAME";
+
     private OkHttpClient mOkHttpClient;
     private SharedPreferences sharedPreferences;
 
@@ -129,6 +134,7 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
     private static BaiduMap mBaiduMap = null;
     private static LatLng mMarkLatLngMap = new LatLng(36.547743718042415, 117.07018449827267); // 当前标记的地图点
     private static String mMarkName = null;
+    private static boolean mHasSelectedLocation = false;   // 是否已有用户选择或恢复的位置
     private GeoCoder mGeoCoder;
     private SensorManager mSensorManager;
     private Sensor mSensorAccelerometer;
@@ -186,6 +192,8 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
         initNavigationView();
 
         initMap();
+
+        restoreSelectedLocation();
 
         initMapLocation();
 
@@ -593,13 +601,16 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
                     } else {
                         if (isFirstLoc) {
                             isFirstLoc = false;
-                            // 这里记录百度地图返回的位置
-                            mMarkLatLngMap = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
-                            MapStatus.Builder builder = new MapStatus.Builder();
-                            builder.target(mMarkLatLngMap).zoom(18.0f);
-                            mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
+                            // 若已选择或恢复了位置，则不再用真实定位覆盖标记
+                            if (!mHasSelectedLocation) {
+                                // 这里记录百度地图返回的位置
+                                mMarkLatLngMap = new LatLng(bdLocation.getLatitude(), bdLocation.getLongitude());
+                                MapStatus.Builder builder = new MapStatus.Builder();
+                                builder.target(mMarkLatLngMap).zoom(18.0f);
+                                mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
 
-                            XLog.i("First Baidu LatLng: " + mMarkLatLngMap);
+                                XLog.i("First Baidu LatLng: " + mMarkLatLngMap);
+                            }
                         }
                     }
                 }
@@ -741,6 +752,41 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
             MarkerOptions ooA = new MarkerOptions().position(mMarkLatLngMap).icon(mMapIndicator);
             mBaiduMap.clear();
             mBaiduMap.addOverlay(ooA);
+            mHasSelectedLocation = true;
+            saveSelectedLocation(this);
+        }
+    }
+
+    // 持久化当前选择的位置，便于下次启动直接显示在首页
+    private static void saveSelectedLocation(Context context) {
+        if (mMarkLatLngMap == null) {
+            return;
+        }
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putString(KEY_MARK_LAT, String.valueOf(mMarkLatLngMap.latitude))
+                .putString(KEY_MARK_LNG, String.valueOf(mMarkLatLngMap.longitude))
+                .putString(KEY_MARK_NAME, mMarkName == null ? "" : mMarkName)
+                .apply();
+    }
+
+    // 启动时恢复上次选择的位置，无需进入历史重新选择
+    private void restoreSelectedLocation() {
+        String lat = sharedPreferences.getString(KEY_MARK_LAT, null);
+        String lng = sharedPreferences.getString(KEY_MARK_LNG, null);
+
+        if (lat == null || lng == null || lat.isEmpty() || lng.isEmpty()) {
+            return;
+        }
+
+        try {
+            mMarkName = sharedPreferences.getString(KEY_MARK_NAME, null);
+            mMarkLatLngMap = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
+            markMap();
+            MapStatusUpdate mapstatusupdate = MapStatusUpdateFactory.newLatLng(mMarkLatLngMap);
+            mBaiduMap.setMapStatus(mapstatusupdate);
+        } catch (NumberFormatException e) {
+            XLog.e("ERROR: restoreSelectedLocation");
         }
     }
 
@@ -760,8 +806,8 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
         mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
     }
 
-    // 在地图上显示位置
-    public static boolean showLocation(String name, String bd09Longitude, String bd09Latitude) {
+    // 在地图上显示位置（供历史记录选择时回调，同时持久化到首页）
+    public static boolean showLocation(Context context, String name, String bd09Longitude, String bd09Latitude) {
         boolean ret = true;
 
         try {
@@ -773,6 +819,8 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
                 mBaiduMap.addOverlay(ooA);
                 MapStatusUpdate mapstatusupdate = MapStatusUpdateFactory.newLatLng(mMarkLatLngMap);
                 mBaiduMap.setMapStatus(mapstatusupdate);
+                mHasSelectedLocation = true;
+                saveSelectedLocation(context);
             }
         } catch (Exception e) {
             ret = false;
@@ -812,11 +860,6 @@ public class MainActivity extends BaseActivity implements SensorEventListener {
     private void doGoLocation(View v) {
         if (!GoUtils.isNetworkAvailable(this)) {
             GoUtils.DisplayToast(this, getResources().getString(R.string.app_error_network));
-            return;
-        }
-
-        if (!GoUtils.isGpsOpened(this)) {
-            GoUtils.showEnableGpsDialog(this);
             return;
         }
 
