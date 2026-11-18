@@ -170,7 +170,7 @@ public class ServiceGo extends Service {
                 mCurAlt = alt;
             }
         });
-        mJoyStick.show();
+        // 默认不显示悬浮摇杆，仅当用户通过通知栏“显示摇杆”时才显示
     }
 
     private void initGoLocation() {
