@@ -128,7 +128,8 @@ public class ServiceGo extends Service {
         }
 
         //准备intent
-        Intent clickIntent = new Intent(this, MainActivity.class);
+        // 点击通知回到首页（首页才是启动/停止模拟的控制入口）
+        Intent clickIntent = new Intent(this, com.zcshou.gogogo.HomeActivity.class);
         PendingIntent clickPI = PendingIntent.getActivity(this, 1, clickIntent, PendingIntent.FLAG_IMMUTABLE);
         Intent showIntent = new Intent(SERVICE_GO_NOTE_ACTION_JOYSTICK_SHOW);
         PendingIntent showPendingPI = PendingIntent.getBroadcast(this, 0, showIntent, PendingIntent.FLAG_IMMUTABLE);
@@ -331,6 +332,23 @@ public class ServiceGo extends Service {
             mCurAlt = alt;
             mLocHandler.sendEmptyMessage(HANDLER_MSG_ID);
             mJoyStick.setCurrentPosition(mCurLng, mCurLat, mCurAlt);
+        }
+
+        /* 首页“摇杆”开关：按需显示/隐藏悬浮摇杆 */
+        public void showJoyStick() {
+            try {
+                mJoyStick.show();
+            } catch (Exception e) {
+                XLog.e("SERVICEGO: ERROR - showJoyStick");
+            }
+        }
+
+        public void hideJoyStick() {
+            try {
+                mJoyStick.hide();
+            } catch (Exception e) {
+                XLog.e("SERVICEGO: ERROR - hideJoyStick");
+            }
         }
     }
 }

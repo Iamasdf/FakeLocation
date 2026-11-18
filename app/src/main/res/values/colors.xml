@@ -157,4 +157,8 @@
     <color name="black_semi_transparent">#B2000000</color>
     <color name="saffron">#F4B63E</color>
     <color name="eggplant">#663D4E</color>
+
+    <!-- 首页 -->
+    <color name="home_muted">#6f7f7f</color>
+    <color name="home_divider">#e6e9e9</color>
 </resources>

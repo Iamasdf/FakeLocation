@@ -59,12 +59,6 @@ public class FragmentSettings extends PreferenceFragmentCompat {
         EditTextPreference pfAltitude = findPreference("setting_altitude");
         setupDecimalEditTextPreference(pfAltitude);
 
-        EditTextPreference pfLatOffset = findPreference("setting_lat_max_offset");
-        setupDecimalEditTextPreference(pfLatOffset);
-
-        EditTextPreference pfLonOffset = findPreference("setting_lon_max_offset");
-        setupDecimalEditTextPreference(pfLonOffset);
-
         SwitchPreferenceCompat pLog = findPreference("setting_log_off");
         if (pLog != null) {
             pLog.setOnPreferenceChangeListener((preference, newValue) -> {
@@ -82,9 +76,6 @@ public class FragmentSettings extends PreferenceFragmentCompat {
                 }
             });
         }
-
-        EditTextPreference pfPosHisValid = findPreference("setting_history_expiration");
-        setupDecimalEditTextPreference(pfPosHisValid);
 
         // 设置版本号
         String verName;

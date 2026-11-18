@@ -82,8 +82,9 @@
                 android:resource="@xml/provider_paths" />
         </provider>
 
+        <!-- 首页：启动即进入（无欢迎页 / 隐私条款页） -->
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".HomeActivity"
             android:exported="true"
             android:theme="@style/AppTheme.NoActionBar"
             >
