@@ -62,9 +62,17 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           tail -n 300 build.log >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          tail -n 10 build.log | while IFS= read -r line; do
-            echo "::error::${line//'%'/'%25'}"
-          done
+          block=$(awk '/What went wrong/{flag=1} flag{print} /BUILD FAILED/{exit}' build.log | head -60)
+          if [ -z "$block" ]; then block=$(tail -n 40 build.log); fi
+          escaped=$(printf '%s\n' "$block" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          echo "::error::$escaped"
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
