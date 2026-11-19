@@ -153,8 +153,6 @@
     <string name="location_edit_title">位置编辑</string>
     <string name="label_name">名称</string>
     <string name="label_address">详细地址</string>
-    <string name="label_latitude">纬度</string>
-    <string name="label_longitude">经度</string>
     <string name="label_altitude">海拔</string>
     <string name="menu_pin">置顶</string>
     <string name="menu_unpin">取消置顶</string>
