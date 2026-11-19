@@ -11,6 +11,7 @@ import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.elvishew.xlog.XLog;
@@ -67,11 +68,23 @@ public class EditLocationActivity extends BaseActivity {
         }
 
         // 点击地图移动标记并更新经纬度
-        mBaiduMap.setOnMapClickListener(point -> {
-            mLatInput.setText(String.valueOf(point.latitude));
-            mLngInput.setText(String.valueOf(point.longitude));
-            showMarker(point);
+        mBaiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng point) {
+                applyPoint(point);
+            }
+
+            @Override
+            public void onMapPoiClick(MapPoi poi) {
+                applyPoint(poi.getPosition());
+            }
         });
+    }
+
+    private void applyPoint(LatLng point) {
+        mLatInput.setText(String.valueOf(point.latitude));
+        mLngInput.setText(String.valueOf(point.longitude));
+        showMarker(point);
     }
 
     @Override
