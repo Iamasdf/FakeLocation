@@ -122,7 +122,9 @@ public class HomeActivity extends BaseActivity {
 
         mStartBtn.setOnClickListener(v -> toggleSimulation());
 
-        mJoySwitch.setChecked(mPrefs.getBoolean(PREF_JOYSTICK_ON, false));
+        mJoySwitch.setChecked(false);
+        mPrefs.edit().putBoolean(PREF_JOYSTICK_ON, false).apply();
+        mJoySwitch.setVisibility(View.GONE);
         mJoySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (mUpdatingSwitch) {
                 return;
@@ -355,7 +357,7 @@ public class HomeActivity extends BaseActivity {
             mTargetAddr.setText(displayName(row));
             String city = parseCity(row.name);
             mTargetCity.setText(TextUtils.isEmpty(city) ? "中国" : city + " · 中国");
-            mTargetCoord.setText(getResources().getString(R.string.home_coord_prefix) + row.lngCustom + "," + row.latCustom);
+            mTargetCoord.setText(getResources().getString(R.string.home_coord_prefix) + row.lngWgs + "," + row.latWgs);
         }
         updateStartButton();
     }
@@ -373,7 +375,7 @@ public class HomeActivity extends BaseActivity {
             TextView name = item.findViewById(R.id.home_item_name);
             TextView coord = item.findViewById(R.id.home_item_coord);
             name.setText(displayName(row));
-            coord.setText(getResources().getString(R.string.home_coord_prefix) + row.lngCustom + "," + row.latCustom);
+            coord.setText(getResources().getString(R.string.home_coord_prefix) + row.lngWgs + "," + row.latWgs);
 
             final long id = row.id;
             item.setOnClickListener(v -> {
@@ -509,10 +511,11 @@ public class HomeActivity extends BaseActivity {
                 return;
             }
             try {
-                double[] latLng = MapUtils.bd2wgs(Double.parseDouble(row.lngCustom), Double.parseDouble(row.latCustom));
+                double lng = Double.parseDouble(row.lngWgs);
+                double lat = Double.parseDouble(row.latWgs);
                 Intent serviceGoIntent = new Intent(this, ServiceGo.class);
-                serviceGoIntent.putExtra(MainActivity.LNG_MSG_ID, latLng[0]);
-                serviceGoIntent.putExtra(MainActivity.LAT_MSG_ID, latLng[1]);
+                serviceGoIntent.putExtra(MainActivity.LNG_MSG_ID, lng);
+                serviceGoIntent.putExtra(MainActivity.LAT_MSG_ID, lat);
                 serviceGoIntent.putExtra(MainActivity.ALT_MSG_ID, getRowAltitude(row));
 
                 startForegroundService(serviceGoIntent);
@@ -557,8 +560,9 @@ public class HomeActivity extends BaseActivity {
             return;
         }
         try {
-            double[] latLng = MapUtils.bd2wgs(Double.parseDouble(row.lngCustom), Double.parseDouble(row.latCustom));
-            mServiceBinder.setPosition(latLng[0], latLng[1], getRowAltitude(row));
+            double lng = Double.parseDouble(row.lngWgs);
+            double lat = Double.parseDouble(row.latWgs);
+            mServiceBinder.setPosition(lng, lat, getRowAltitude(row));
         } catch (NumberFormatException e) {
             XLog.e("HOME: applyCurrentPosition error");
             return;

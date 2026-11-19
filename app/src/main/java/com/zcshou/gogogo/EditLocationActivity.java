@@ -4,20 +4,22 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.widget.EditText;
 
-import com.baidu.mapapi.map.BaiduMap;
-import com.baidu.mapapi.map.BitmapDescriptor;
-import com.baidu.mapapi.map.BitmapDescriptorFactory;
-import com.baidu.mapapi.map.MapStatusUpdateFactory;
-import com.baidu.mapapi.map.MapView;
-import com.baidu.mapapi.map.MapPoi;
-import com.baidu.mapapi.map.MarkerOptions;
-import com.baidu.mapapi.model.LatLng;
+import androidx.annotation.NonNull;
+
 import com.elvishew.xlog.XLog;
 import com.zcshou.database.DataBaseHistoryLocation;
 import com.zcshou.utils.GoUtils;
 import com.zcshou.utils.MapUtils;
+import com.zcshou.utils.NominatimGeocoder;
+import com.zcshou.utils.OsmMapController;
+
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+
+import java.util.Locale;
 
 public class EditLocationActivity extends BaseActivity {
     public static final String EXTRA_ID = "EXTRA_ID";
@@ -32,8 +34,8 @@ public class EditLocationActivity extends BaseActivity {
     private EditText mAltInput;
 
     private MapView mMapView;
-    private BaiduMap mBaiduMap;
-    private final BitmapDescriptor mIndicator = BitmapDescriptorFactory.fromResource(R.drawable.icon_gcoding);
+    private OsmMapController mMapController;
+    private NominatimGeocoder mGeocoder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +56,13 @@ public class EditLocationActivity extends BaseActivity {
         mAltInput = findViewById(R.id.edit_alt);
 
         mMapView = findViewById(R.id.edit_map_view);
-        mMapView.showZoomControls(false);
-        mBaiduMap = mMapView.getMap();
-        mBaiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
+        mGeocoder = new NominatimGeocoder(this);
+        mMapController = new OsmMapController(this, mMapView, (point, longPress) -> {
+            applyPoint(point);
+            if (longPress) {
+                requestAddress(point);
+            }
+        });
 
         findViewById(R.id.edit_back).setOnClickListener(v -> finish());
         findViewById(R.id.edit_save).setOnClickListener(v -> saveAndFinish());
@@ -64,27 +70,38 @@ public class EditLocationActivity extends BaseActivity {
         if (!loadRecord()) {
             GoUtils.DisplayToast(this, getResources().getString(R.string.edit_location_missing));
             finish();
+        }
+    }
+
+    private void applyPoint(GeoPoint point) {
+        mLatInput.setText(String.valueOf(point.getLatitude()));
+        mLngInput.setText(String.valueOf(point.getLongitude()));
+        mMapController.showMarker(point, null, formatCoordinate(point));
+        mMapController.moveTo(point, 17.0);
+    }
+
+    private void requestAddress(GeoPoint point) {
+        if (mGeocoder == null) {
             return;
         }
-
-        // 点击地图移动标记并更新经纬度
-        mBaiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
+        mGeocoder.reverse(point, new NominatimGeocoder.Callback() {
             @Override
-            public void onMapClick(LatLng point) {
-                applyPoint(point);
+            public void onAddress(@NonNull String address) {
+                if (isFinishing()) {
+                    return;
+                }
+                mAddressInput.setText(address);
             }
 
             @Override
-            public void onMapPoiClick(MapPoi poi) {
-                applyPoint(poi.getPosition());
+            public void onError(String message) {
+                XLog.i("Nominatim reverse failed: " + message);
             }
         });
     }
 
-    private void applyPoint(LatLng point) {
-        mLatInput.setText(String.valueOf(point.latitude));
-        mLngInput.setText(String.valueOf(point.longitude));
-        showMarker(point);
+    private static String formatCoordinate(GeoPoint point) {
+        return String.format(Locale.US, "%.6f, %.6f", point.getLatitude(), point.getLongitude());
     }
 
     @Override
@@ -101,10 +118,10 @@ public class EditLocationActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-        mMapView.onDestroy();
-        if (mIndicator != null) {
-            mIndicator.recycle();
+        if (mGeocoder != null) {
+            mGeocoder.shutdown();
         }
+        mMapView.onDetach();
         if (mHistoryDB != null) {
             mHistoryDB.close();
         }
@@ -124,10 +141,21 @@ public class EditLocationActivity extends BaseActivity {
                     return false;
                 }
                 String name = cursor.getString(1);
-                String lng = cursor.getString(5);
-                String lat = cursor.getString(6);
+                String lng = cursor.getString(2);
+                String lat = cursor.getString(3);
                 String address = cursor.getString(7);
                 String altitude = cursor.getString(9);
+
+                if (TextUtils.isEmpty(lng) || TextUtils.isEmpty(lat)) {
+                    String legacyLng = cursor.getString(5);
+                    String legacyLat = cursor.getString(6);
+                    if (!TextUtils.isEmpty(legacyLng) && !TextUtils.isEmpty(legacyLat)) {
+                        double[] wgs = MapUtils.bd2wgs(
+                                Double.parseDouble(legacyLng), Double.parseDouble(legacyLat));
+                        lng = String.valueOf(wgs[0]);
+                        lat = String.valueOf(wgs[1]);
+                    }
+                }
 
                 mNameInput.setText(name == null ? "" : name);
                 mAddressInput.setText(address == null ? (name == null ? "" : name) : address);
@@ -137,9 +165,9 @@ public class EditLocationActivity extends BaseActivity {
 
                 double dLat = Double.parseDouble(lat);
                 double dLng = Double.parseDouble(lng);
-                LatLng latLng = new LatLng(dLat, dLng);
-                mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newLatLngZoom(latLng, 17.0f));
-                showMarker(latLng);
+                GeoPoint point = new GeoPoint(dLat, dLng);
+                mMapController.moveTo(point, 17.0);
+                mMapController.showMarker(point, name, formatCoordinate(point));
                 return true;
             } finally {
                 cursor.close();
@@ -148,11 +176,6 @@ public class EditLocationActivity extends BaseActivity {
             XLog.e("EDIT_LOCATION: loadRecord error");
             return false;
         }
-    }
-
-    private void showMarker(LatLng latLng) {
-        mBaiduMap.clear();
-        mBaiduMap.addOverlay(new MarkerOptions().position(latLng).icon(mIndicator));
     }
 
     private void saveAndFinish() {
@@ -198,14 +221,14 @@ public class EditLocationActivity extends BaseActivity {
         }
 
         try {
-            double[] latLng = MapUtils.bd2wgs(lng, lat);
             ContentValues contentValues = new ContentValues();
             contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LOCATION, name);
             contentValues.put(DataBaseHistoryLocation.DB_COLUMN_ADDRESS, address);
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_CUSTOM, Double.toString(lng));
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_CUSTOM, Double.toString(lat));
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_WGS84, String.valueOf(latLng[0]));
-            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_WGS84, String.valueOf(latLng[1]));
+            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_WGS84, String.valueOf(lng));
+            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_WGS84, String.valueOf(lat));
+            // Keep legacy columns in sync for older readers.
+            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LONGITUDE_CUSTOM, String.valueOf(lng));
+            contentValues.put(DataBaseHistoryLocation.DB_COLUMN_LATITUDE_CUSTOM, String.valueOf(lat));
             contentValues.put(DataBaseHistoryLocation.DB_COLUMN_ALTITUDE, Double.toString(alt));
 
             mHistoryDB.update(DataBaseHistoryLocation.TABLE_NAME, contentValues,

@@ -168,4 +168,8 @@
     <string name="update_ignore">忽略一次</string>
     <string name="update_time">更新时间：</string>
     <string name="update_commit">提交信息：</string>
+    <string name="home_address_loading">正在解析地址...</string>
+    <string name="home_address_hint">点击地图选择位置</string>
+    <string name="input_position_manual">手动输入的坐标</string>
+    <string name="app_error_current_location">无法获取当前位置</string>
 </resources>
