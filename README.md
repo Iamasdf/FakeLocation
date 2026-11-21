@@ -4,6 +4,12 @@ PinLocation 是一款免 Root 的 Android 位置模拟应用，支持地图选�
 
 [English](./README.en.md)
 
+## 界面截图
+
+| 首页 | 历史记录 | 设置 |
+| :---: | :---: | :---: |
+| <img src="docs/images/screenshot-home.png" width="240" /> | <img src="docs/images/screenshot-history.png" width="240" /> | <img src="docs/images/screenshot-settings.png" width="240" /> |
+
 ## 1. 功能
 
 ### 1.1 首页：位置模拟
@@ -16,7 +22,7 @@ PinLocation 是一款免 Root 的 Android 位置模拟应用，支持地图选�
 
 ### 1.2 地图选点
 
-地图使用百度地图 SDK，支持：
+支持：
 
 - 普通图与卫星图切换，双击或按钮缩放。
 - 单击地图或 POI 选点并放置标记；长按地图选点并逆地理编码显示地址。
@@ -68,45 +74,10 @@ PinLocation 是一款免 Root 的 Android 位置模拟应用，支持地图选�
 | JDK | 17 |
 | Gradle / AGP | Gradle 8.13、AGP 8.12.1 |
 | NDK / Build Tools | 26.2.11394342、36.0.0 |
-| 地图 SDK | 百度地图 7.6.5（`app/libs/BaiduLBS_Android.jar` + `app/libs/arm64-v8a/*.so`） |
 
 主要依赖：AndroidX AppCompat、ConstraintLayout、Preference、Material、OkHttp、XLog、Markwon。
 
-## 3. 构建
-
-### 3.1 准备 `local.properties`
-
-该文件不纳入版本控制，需要在工程根目录自行创建：
-
-```properties
-sdk.dir=<Android SDK 路径>
-MAPS_API_KEY=<百度地图 Android AK>
-MAPS_SAFE_CODE=<百度地图安全码>
-```
-
-`MAPS_API_KEY` 由 secrets 插件生成 `BuildConfig.MAPS_API_KEY`，启动时通过 `SDKInitializer.setApiKey(...)` 传入。百度 AK 必须同时匹配包名 `com.iamasdf.pinlocation` 与签名证书的 SHA1；debug 与 release 都使用仓库内的 `keystore/PinLocation.jks`，包名或签名不一致都会导致地图鉴权失败，底图只显示网格。
-
-### 3.2 构建命令
-
-```bash
-./gradlew assembleDebug
-```
-
-产物：`app/build/outputs/apk/debug/PinLocation_1.12.3_arm64-v8a_debug.apk`
-
-```bash
-./gradlew assembleRelease
-```
-
-产物：`app/build/outputs/apk/release/PinLocation_1.12.3_arm64-v8a_release.apk`（开启 R8 混淆与资源压缩）。
-
-### 3.3 CI
-
-- `.github/workflows/build-check.yml`：推送到 `master` 或提交 PR 时构建 debug APK 并上传；未配置 secrets 时用 `CI_PLACEHOLDER` 代替地图 Key，地图鉴权会失败。
-- `.github/workflows/build-release.yml`：推送 tag 或手动触发时构建、签名并发布 Release，需要 `MAPS_API_KEY`、`MAPS_SAFE_CODE`、`SIGNING_KEY`、`ALIAS`、`KEY_STORE_PASSWORD`、`KEY_PASSWORD` 等 secrets。
-- `.github/workflows/codeql-analysis.yml`：代码扫描。
-
-## 4. 安装与首次使用
+## 3. 安装与首次使用
 
 1. 安装 APK（仅支持 64 位 ARM 设备）。
 2. 授予定位权限；Android 10 及以上如需后台持续模拟，请选择「始终允许」。
@@ -115,18 +86,3 @@ MAPS_SAFE_CODE=<百度地图安全码>
 5. 需要使用悬浮摇杆时，打开首页的摇杆开关并按提示授予悬浮窗权限。
 
 应用不设欢迎页或协议页，启动即进入首页。
-
-## 5. 已知限制
-
-- 百度 AK 未绑定签名、未开通相应服务或 Key 错误时，地图无法加载。
-- 逆地理编码失败或返回空地址时，位置名称回退为「地图位置」。
-- 是否被其他应用采纳取决于系统定位策略、坐标系和目标应用自身的逻辑。
-- 仅提供 `arm64-v8a`，不支持 32 位 ARM 与 x86 设备。
-
-## 6. 许可
-
-本项目以 GPL-3.0-only 发布，版权与许可条款见 [LICENSE](./LICENSE)。
-
-## 7. 致谢
-
-感谢百度地图 SDK、XLog、OkHttp、Markwon 与 AndroidX 等开源项目。

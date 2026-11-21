@@ -4,6 +4,12 @@ PinLocation is a mock-location app for Android that works without root. It suppo
 
 [中文说明](./README.md)
 
+## Screenshots
+
+| Home | History | Settings |
+| :---: | :---: | :---: |
+| <img src="docs/images/screenshot-home.png" width="240" /> | <img src="docs/images/screenshot-history.png" width="240" /> | <img src="docs/images/screenshot-settings.png" width="240" /> |
+
 ## Features
 
 ### Home: location simulation
@@ -14,7 +20,7 @@ PinLocation is a mock-location app for Android that works without root. It suppo
 - Start/stop simulation with one button; a foreground-service notification appears while running.
 - Drawer and overflow menu: history, settings, developer options, check for updates, feedback, contact.
 
-### Map selection (Baidu Maps SDK)
+### Map selection
 
 - Normal and satellite layers; double-tap or buttons to zoom.
 - Tap the map or a POI to drop a marker; long-press to also reverse-geocode an address.
@@ -63,33 +69,6 @@ Route editing/playback, GPX import/export, favourites and groups, per-instance i
 | JDK | 17 |
 | Gradle / AGP | 8.13 / 8.12.1 |
 | NDK / Build Tools | 26.2.11394342 / 36.0.0 |
-| Map SDK | Baidu Maps 7.6.5 (`app/libs/BaiduLBS_Android.jar` + `app/libs/arm64-v8a/*.so`) |
-
-## Build
-
-Create `local.properties` in the project root (it is not tracked):
-
-```properties
-sdk.dir=<path to Android SDK>
-MAPS_API_KEY=<Baidu Maps Android AK>
-MAPS_SAFE_CODE=<Baidu Maps security code>
-```
-
-The secrets plugin turns `MAPS_API_KEY` into `BuildConfig.MAPS_API_KEY`, which is passed to `SDKInitializer.setApiKey(...)` at startup. The Baidu AK must match both the application ID `com.iamasdf.pinlocation` and the signing certificate's SHA1; both debug and release use `keystore/PinLocation.jks` from this repository, and a mismatched ID or signature fails map authentication and shows a blank grid.
-
-```bash
-./gradlew assembleDebug
-```
-
-Output: `app/build/outputs/apk/debug/PinLocation_1.12.3_arm64-v8a_debug.apk`
-
-```bash
-./gradlew assembleRelease
-```
-
-Output: `app/build/outputs/apk/release/PinLocation_1.12.3_arm64-v8a_release.apk` (R8 and resource shrinking enabled).
-
-CI: `build-check.yml` builds and uploads a debug APK on pushes and pull requests to `master` (missing secrets fall back to `CI_PLACEHOLDER`, so map authentication fails); `build-release.yml` builds, signs, and publishes a release on tags or manual dispatch and needs the `MAPS_API_KEY`, `MAPS_SAFE_CODE`, `SIGNING_KEY`, `ALIAS`, `KEY_STORE_PASSWORD`, and `KEY_PASSWORD` secrets.
 
 ## Install and first run
 
@@ -100,18 +79,3 @@ CI: `build-check.yml` builds and uploads a debug APK on pushes and pull requests
 5. To use the floating joystick, turn on the joystick switch and grant the overlay permission.
 
 There is no welcome or consent screen; the app opens directly on the home screen.
-
-## Known limitations
-
-- The map fails to load if the AK is wrong, unbound to the signing SHA1, or the required services are not enabled.
-- When reverse geocoding fails or returns an empty address, the location name falls back to "地图位置" (map location).
-- Whether other apps accept the mock position depends on system policy, coordinate system, and the target app.
-- Only `arm64-v8a` is packaged; 32-bit ARM and x86 devices are not supported.
-
-## License
-
-Released under GPL-3.0-only; see [LICENSE](./LICENSE) for the full text and copyright notices.
-
-## Credits
-
-Baidu Maps SDK, XLog, OkHttp, Markwon, and AndroidX.
