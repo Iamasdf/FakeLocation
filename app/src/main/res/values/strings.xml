@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">影梭</string>
+    <string name="app_name">PinLocation</string>
     <string name="app_settings">设置</string>
     <string name="app_history">历史记录</string>
-    <string name="app_author">ZCShou</string>
-    <string name="app_email">zcsexp@gmail.com</string>
+    <string name="app_author">Iamasdf</string>
+    <string name="app_email">Iamasdf@users.noreply.github.com</string>
     <string name="app_statement">仅供学习使用，否则后果自负！</string>
-    <string name="app_service_tips">影梭服务正在运行中</string>
+    <string name="app_service_tips">PinLocation服务正在运行中</string>
     <string name="app_agreement">用户协议</string>
     <string name="app_agreement_content">"1. 本软件专为学习 Android 开发使用，不会收集任何用户数据。"
     "严禁利用本软件侵犯他人隐私权或者用于游戏牟利，如软件使用者不能遵守此规定， 请立即删除。"
@@ -134,6 +134,9 @@
 
     <!-- 首页（目标位置 / 历史位置） -->
     <string name="home_title">位置模拟</string>
+    <string name="home_subtitle">目的地随时切换，一键开始模拟</string>
+    <string name="home_status_idle">未启动</string>
+    <string name="home_status_running">模拟中</string>
     <string name="home_target_label">目标位置</string>
     <string name="home_history_label">历史位置</string>
     <string name="home_coord_prefix">经纬度：</string>
@@ -163,7 +166,7 @@
     <string name="save_failed">保存失败，请重试</string>
     <string name="edit_location_missing">该记录不存在</string>
     <string name="update_downloading">升级文件下载中。。。</string>
-    <string name="update_last">恭喜，影梭已是最新版</string>
+    <string name="update_last">恭喜，PinLocation已是最新版</string>
     <string name="update_download">立即下载</string>
     <string name="update_ignore">忽略一次</string>
     <string name="update_time">更新时间：</string>

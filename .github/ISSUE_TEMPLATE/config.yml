@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: 更多有用信息
-    url: https://itexp.blog.csdn.net/
-    about: More useful information.
+  - name: 项目主页
+    url: https://github.com/Iamasdf/PinLocation
+    about: 版本发布与问题反馈。

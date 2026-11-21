@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#ff008577</color>
-    <color name="colorPrimaryDark">#ff008577</color>
-    <color name="colorAccent">#ff00897B</color>
+    <color name="colorPrimary">#2AA7E1</color>
+    <color name="colorPrimaryDark">#146A93</color>
+    <color name="colorAccent">#FF7A18</color>
+
+    <!-- 新版界面配色 -->
+    <color name="surface">#FFFFFFFF</color>
+    <color name="surface_muted">#FFF1F8FC</color>
+    <color name="text_primary">#FF102A38</color>
+    <color name="text_secondary">#FF5C7683</color>
+    <color name="divider">#FFDCEBF3</color>
+    <color name="brand_primary_soft">#FFE3F3FB</color>
+    <color name="brand_accent_soft">#FFFFEFE3</color>
+    <color name="status_idle_bg">#FFE3F3FB</color>
+    <color name="status_idle_text">#FF2A7C9E</color>
+    <color name="status_running_bg">#FFFFEFE3</color>
+    <color name="status_running_text">#FFC2540B</color>
+    <color name="stop_action">#FF146A93</color>
+    <color name="stop_action_dark">#FF0E5273</color>
+    <color name="cta_start">#FFFF9A42</color>
+    <color name="cta_end">#FFEE5A08</color>
 
     <color name="white">#ffffff</color> <!-- 白色 -->
     <color name="ivory">#fffff0</color> <!-- 象牙色 -->
@@ -159,6 +176,6 @@
     <color name="eggplant">#663D4E</color>
 
     <!-- 首页 -->
-    <color name="home_muted">#6f7f7f</color>
-    <color name="home_divider">#e6e9e9</color>
+    <color name="home_muted">#FF5C7683</color>
+    <color name="home_divider">#FFDCEBF3</color>
 </resources>
